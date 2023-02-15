@@ -1,7 +1,0 @@
-#include <stdio.h>
-#include <stdlib.h>
-int main(void)
-{
-  puts("helo GitHub");
-  exit(0);
- }

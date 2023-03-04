@@ -7,6 +7,7 @@ struct Cell{
 };
 typedef struct Cell cell;
 bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, bool castle[2][2], char PositionHistory[2][2], char side, bool* EnPasant, bool* Rook);
+bool IsCheck(cell board[8][8], char side);
 void Display(cell board[8][8]);
 int main(void){
     printf("Hello players!\n");
@@ -79,6 +80,15 @@ int main(void){
         board[move[1] - '1'][move[0] - 'a'].team = board[select[1] - '1'][select[0] - 'a'].team;
         board[select[1] - '1'][select[0] - 'a'].index = '-';
         board[select[1] - '1'][select[0] - 'a'].team = '-';
+        if(IsCheck(board, side))
+        {
+            printf("Warning, king in check\n");
+            board[select[1] - '1'][select[0] - 'a'].index = board[move[1] - '1'][move[0] - 'a'].index;
+            board[select[1] - '1'][select[0] - 'a'].team = board[move[1] - '1'][move[0] - 'a'].team;
+            board[move[1] - '1'][move[0] - 'a'].index = '-';
+            board[move[1] - '1'][move[0] - 'a'].team = '-';
+            continue;
+        }
         if(Rook)
         {
             if(move[0] == 'c')
@@ -252,8 +262,7 @@ bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, 
         }
     }
     if(board[SelectY][SelectX].index == 'Q'){
-        if(!((MoveY - SelectY == MoveX - SelectX)||(MoveY - SelectY == SelectX - MoveX)))
-            return false;
+
         if(SelectX == MoveX){
             if(SelectY > MoveY){
                 for(int i = MoveY; i < SelectY; ++i)
@@ -348,5 +357,127 @@ bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, 
         }
         return false;
     }
+    return false;
+}
+bool IsCheck(cell board[8][8], char side)
+{
+    int KingXPosition = 9;
+    int KingYPosition = 9;
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            if((board[i][j].index == 'K')&&(board[i][j].team == side))
+            {
+                KingXPosition = j;
+                KingYPosition = i;
+                break;
+            }
+        }
+        if(KingXPosition != 9)
+            break;
+    }
+    for(int i = KingXPosition + 1; i < 8; i++)
+    {
+        if(board[KingYPosition][i].team == side)
+            break;
+        if((board[KingYPosition][i].index == 'R')&&(board[KingYPosition][i].team != side))
+            return true;
+        if((board[KingYPosition][i].index == 'Q')&&(board[KingYPosition][i].team != side))
+            return true;
+    }
+    for(int i = KingXPosition - 1; i  >= 0; i--)
+    {
+        if(board[KingYPosition][i].team == side)
+            break;
+        if((board[KingYPosition][i].index == 'R')&&(board[KingYPosition][i].team != side))
+            return true;
+        if((board[KingYPosition][i].index == 'Q')&&(board[KingYPosition][i].team != side))
+            return true;
+    }
+    for(int i = KingYPosition + 1; i < 8; i++)
+    {
+        if(board[i][KingXPosition].team == side)
+            break;
+        if((board[i][KingXPosition].index == 'R')&&(board[i][KingXPosition].team != side))
+            return true;
+        if((board[i][KingXPosition].index == 'Q')&&(board[i][KingXPosition].team != side))
+            return true;
+    }
+    for(int i = KingYPosition - 1; i  >= 0; i--)
+    {
+        if(board[i][KingXPosition].team == side)
+            break;
+        if((board[i][KingXPosition].index == 'R')&&(board[i][KingXPosition].team != side))
+            return true;
+        if((board[i][KingXPosition].index == 'Q')&&(board[i][KingXPosition].team != side))
+            return true;
+    }
+    for(int i = 1; ((KingXPosition + i < 8)&&(KingYPosition + i < 8)); i++)
+    {
+        if(board[KingYPosition + i][KingXPosition + i].team == side)
+            break;
+        if((board[KingYPosition + i][KingXPosition + i].index == 'B')&&(board[KingYPosition + i][KingXPosition + i].team != side))
+            return true;
+        if((board[KingYPosition + i][KingXPosition + i].index == 'Q')&&(board[KingYPosition + i][KingXPosition + i].team != side))
+            return true;
+    }
+    for(int i = 1; ((KingXPosition + i < 8)&&(KingYPosition - i >= 0)); i++)
+    {
+        if(board[KingYPosition - i][KingXPosition + i].team == side)
+            break;
+        if((board[KingYPosition - i][KingXPosition + i].index == 'B')&&(board[KingYPosition - i][KingXPosition + i].team != side))
+            return true;
+        if((board[KingYPosition - i][KingXPosition + i].index == 'Q')&&(board[KingYPosition - i][KingXPosition + i].team != side))
+            return true;
+    }
+    for(int i = 1; ((KingXPosition - i >= 0)&&(KingYPosition + i < 8)); i++)
+    {
+        if(board[KingYPosition + i][KingXPosition - i].team == side)
+            break;
+        if((board[KingYPosition + i][KingXPosition - i].index == 'B')&&(board[KingYPosition + i][KingXPosition - i].team != side))
+            return true;
+        if((board[KingYPosition + i][KingXPosition - i].index == 'Q')&&(board[KingYPosition + i][KingXPosition - i].team != side))
+            return true;
+    }
+    for(int i = 1; ((KingXPosition - i >= 0)&&(KingYPosition - i >= 0)); i++)
+    {
+        if(board[KingYPosition - i][KingXPosition - i].team == side)
+            break;
+        if((board[KingYPosition - i][KingXPosition - i].index == 'B')&&(board[KingYPosition - i][KingXPosition - i].team != side))
+            return true;
+        if((board[KingYPosition - i][KingXPosition - i].index == 'Q')&&(board[KingYPosition - i][KingXPosition - i].team != side))
+            return true;
+    }
+    if(side == 'w')
+    {
+        if((KingXPosition < 7)&&(KingYPosition < 6)&&(board[KingYPosition + 1][KingXPosition + 1].index == 'P')&&(board[KingYPosition + 1][KingXPosition + 1].team == 'b'))
+            return true;
+        if((KingXPosition > 0)&&(KingYPosition < 6)&&(board[KingYPosition + 1][KingXPosition - 1].index == 'P')&&(board[KingYPosition + 1][KingXPosition - 1].team == 'b'))
+            return true;
+    }
+    else
+    {
+        if((KingXPosition < 7)&&(KingYPosition > 1)&&(board[KingYPosition - 1][KingXPosition + 1].index == 'P')&&(board[KingYPosition - 1][KingXPosition + 1].team == 'w'))
+            return true;
+        if((KingXPosition > 0)&&(KingYPosition > 1)&&(board[KingYPosition - 1][KingXPosition - 1].index == 'P')&&(board[KingYPosition - 1][KingXPosition - 1].team == 'w'))
+            return true;
+    }
+    if((KingYPosition > 1)&&(KingXPosition > 0)&&(board[KingYPosition - 2][KingXPosition - 1].index == 'N')&&(board[KingYPosition - 2][KingXPosition - 1].team != side))
+        return true;
+    if((KingYPosition > 1)&&(KingXPosition < 7)&&(board[KingYPosition - 2][KingXPosition + 1].index == 'N')&&(board[KingYPosition - 2][KingXPosition + 1].team != side))
+        return true;
+    if((KingYPosition < 6)&&(KingXPosition > 0)&&(board[KingYPosition + 2][KingXPosition - 1].index == 'N')&&(board[KingYPosition + 2][KingXPosition - 1].team != side))
+        return true;
+    if((KingYPosition < 6)&&(KingXPosition < 7)&&(board[KingYPosition + 2][KingXPosition + 1].index == 'N')&&(board[KingYPosition + 2][KingXPosition + 1].team != side))
+        return true;
+    if((KingYPosition > 0)&&(KingXPosition > 1)&&(board[KingYPosition - 1][KingXPosition - 2].index == 'N')&&(board[KingYPosition - 1][KingXPosition - 2].team != side))
+        return true;
+    if((KingYPosition > 0)&&(KingXPosition < 6)&&(board[KingYPosition - 1][KingXPosition + 2].index == 'N')&&(board[KingYPosition - 1][KingXPosition + 2].team != side))
+        return true;
+    if((KingYPosition < 7)&&(KingXPosition > 1)&&(board[KingYPosition + 1][KingXPosition - 2].index == 'N')&&(board[KingYPosition + 1][KingXPosition - 2].team != side))
+        return true;
+    if((KingYPosition < 7)&&(KingXPosition < 6)&&(board[KingYPosition + 1][KingXPosition + 2].index == 'N')&&(board[KingYPosition + 1][KingXPosition + 2].team != side))
+        return true;
     return false;
 }

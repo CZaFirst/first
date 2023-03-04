@@ -463,6 +463,7 @@ bool IsCheck(cell board[8][8], char side)
         if((KingXPosition > 0)&&(KingYPosition > 1)&&(board[KingYPosition - 1][KingXPosition - 1].index == 'P')&&(board[KingYPosition - 1][KingXPosition - 1].team == 'w'))
             return true;
     }
+    \\castle verifying
     if((KingYPosition > 1)&&(KingXPosition > 0)&&(board[KingYPosition - 2][KingXPosition - 1].index == 'N')&&(board[KingYPosition - 2][KingXPosition - 1].team != side))
         return true;
     if((KingYPosition > 1)&&(KingXPosition < 7)&&(board[KingYPosition - 2][KingXPosition + 1].index == 'N')&&(board[KingYPosition - 2][KingXPosition + 1].team != side))

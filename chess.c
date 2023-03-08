@@ -16,6 +16,7 @@ int main(void){
     char select[4] = {'-', '-', '-', '-'}, move[4] = {'-', '-', '-', '-'};
     char side = 'w';
     char PositionHistory[2][2] = {{'-', '-'}, {'-', '-'}};
+    char CapturedFigure = '-';
     bool EnPasant = false;
     bool Rook = false;
     for(short i = 0; i < 8; i++){
@@ -72,6 +73,7 @@ int main(void){
             printf("Warning, your move is not valid\n");
             continue;
         }
+        CapturedFigure = board[move[1] - '1'][move[0] - 'a'].index;
         PositionHistory[0][0] = select[0];
         PositionHistory[0][1] = select[1];
         PositionHistory[1][0] = move[0];
@@ -85,25 +87,92 @@ int main(void){
             printf("Warning, king in check\n");
             board[select[1] - '1'][select[0] - 'a'].index = board[move[1] - '1'][move[0] - 'a'].index;
             board[select[1] - '1'][select[0] - 'a'].team = board[move[1] - '1'][move[0] - 'a'].team;
-            board[move[1] - '1'][move[0] - 'a'].index = '-';
-            board[move[1] - '1'][move[0] - 'a'].team = '-';
+            board[move[1] - '1'][move[0] - 'a'].index = CapturedFigure;
+            if(side == 'w')
+                board[move[1]-'1'][move[0]-'a'].team = 'b';
+            else
+                board[move[1]-'1'][move[0]-'a'].team = 'w';
             continue;
         }
         if(Rook)
         {
             if(move[0] == 'c')
             {
-                board[move[1] - '1'][move[0] - 'a' + 1].index = 'R';
-                board[move[1] - '1'][move[0] - 'a' + 1].team = side;
-                board[move[1] - '1'][0].index = '-';
-                board[move[1] - '1'][0].team = '-';
+                board[move[1] - '1'][2].index = '-';
+                board[move[1] - '1'][2].team = '-';
+                board[move[1] - '1'][3].index = 'K';
+                board[move[1] - '1'][3].team = side;
+                if(IsCheck(board, side))
+                {
+                    printf("Warning, king cannot castle under attack!\n");
+                    board[select[1] - '1'][4].index = 'K';
+                    board[select[1] - '1'][4].team = side;
+                    board[select[1] - '1'][3].index = '-';
+                    board[select[1] - '1'][3].team = '-';
+                    continue;
+                }
+                else
+                {
+                    board[select[1] - '1'][4].index = 'K';
+                    board[select[1] - '1'][4].team = side;
+                    board[select[1] - '1'][3].index = '-';
+                    board[select[1] - '1'][3].team = '-';
+                    if(IsCheck(board, side))
+                    {
+                        printf("Warning, king cannot castle under attack!\n");
+                        continue;
+                    }
+                    else
+                    {
+                        board[select[1] - '1'][4].index = '-';
+                        board[select[1] - '1'][4].team = '-';
+                        board[move[1] - '1'][2].index = 'K';
+                        board[move[1] - '1'][2].team = side;
+                        board[move[1] - '1'][move[0] - 'a' + 1].index = 'R';
+                        board[move[1] - '1'][move[0] - 'a' + 1].team = side;
+                        board[move[1] - '1'][0].index = '-';
+                        board[move[1] - '1'][0].team = '-';
+                    }
+                }
             }
             else
             {
-                board[move[1] - '1'][move[0] - 'a' - 1].index = 'R';
-                board[move[1] - '1'][move[0] - 'a' - 1].team = side;
-                board[move[1] - '1'][7].index = '-';
-                board[move[1] - '1'][7].team = '-';
+                board[move[1] - '1'][6].index = '-';
+                board[move[1] - '1'][6].team = '-';
+                board[move[1] - '1'][5].index = 'K';
+                board[move[1] - '1'][5].team = side;
+                if(IsCheck(board, side))
+                {
+                    printf("Warning, king cannot castle under attack!\n");
+                    board[select[1] - '1'][4].index = 'K';
+                    board[select[1] - '1'][4].team = side;
+                    board[select[1] - '1'][5].index = '-';
+                    board[select[1] - '1'][5].team = '-';
+                    continue;
+                }
+                else
+                {
+                    board[select[1] - '1'][4].index = 'K';
+                    board[select[1] - '1'][4].team = side;
+                    board[select[1] - '1'][5].index = '-';
+                    board[select[1] - '1'][5].team = '-';
+                    if(IsCheck(board, side))
+                    {
+                        printf("Warning, king cannot castle under attack!\n");
+                        continue;
+                    }
+                    else
+                    {
+                        board[select[1] - '1'][4].index = '-';
+                        board[select[1] - '1'][4].team = '-';
+                        board[move[1] - '1'][6].index = 'K';
+                        board[move[1] - '1'][6].team = side;
+                        board[move[1] - '1'][move[0] - 'a' - 1].index = 'R';
+                        board[move[1] - '1'][move[0] - 'a' - 1].team = side;
+                        board[move[1] - '1'][7].index = '-';
+                        board[move[1] - '1'][7].team = '-';
+                    }
+                }
             }
         }
         if(EnPasant)
@@ -377,6 +446,8 @@ bool IsCheck(cell board[8][8], char side)
         if(KingXPosition != 9)
             break;
     }
+    if(KingXPosition == 9)
+        exit(1);
     for(int i = KingXPosition + 1; i < 8; i++)
     {
         if(board[KingYPosition][i].team == side)
@@ -463,7 +534,6 @@ bool IsCheck(cell board[8][8], char side)
         if((KingXPosition > 0)&&(KingYPosition > 1)&&(board[KingYPosition - 1][KingXPosition - 1].index == 'P')&&(board[KingYPosition - 1][KingXPosition - 1].team == 'w'))
             return true;
     }
-    \\castle verifying
     if((KingYPosition > 1)&&(KingXPosition > 0)&&(board[KingYPosition - 2][KingXPosition - 1].index == 'N')&&(board[KingYPosition - 2][KingXPosition - 1].team != side))
         return true;
     if((KingYPosition > 1)&&(KingXPosition < 7)&&(board[KingYPosition - 2][KingXPosition + 1].index == 'N')&&(board[KingYPosition - 2][KingXPosition + 1].team != side))

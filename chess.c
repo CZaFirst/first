@@ -17,6 +17,7 @@ int main(void){
     char side = 'w';
     char PositionHistory[2][2] = {{'-', '-'}, {'-', '-'}};
     char CapturedFigure = '-';
+    char PromotionIndex = '-';
     bool EnPasant = false;
     bool Rook = false;
     for(short i = 0; i < 8; i++){
@@ -35,6 +36,7 @@ int main(void){
     while(true){
         EnPasant = false;
         Rook = false;
+        PromotionIndex = '-';
         side == 'w'? printf("player nr.1, enter the coordinates of the selected square\n") : printf("player nr.2, enter coordinates of the selected square\n");
         fgets(select, 4, stdin);
         if((select[0] == 'e')&&(select[1] == 'x')&&(select[2] == 't'))
@@ -203,6 +205,30 @@ int main(void){
                 castle[0][1] = false;
             if((select[0] == 'h')&&(select[1] == '8'))
                 castle[1][1] = false;
+        }
+        if((board[move[1] - '1'][move[0] - 'a'].index == 'P')&&(side == 'w')&&(move[1] == '8'))
+        {
+            printf("Player nr.1, your pawn has achieved promotion!\nenter the new figure:\n");
+            scanf("%c", &PromotionIndex);
+            while((PromotionIndex != 'R')&&(PromotionIndex != 'B')&&(PromotionIndex != 'Q')&&(PromotionIndex != 'N'))
+            {
+                printf("Warning, you entered an invalid index!\n");
+                PromotionIndex = getchar();
+            }
+        }
+        if((board[move[1] - '1'][move[0] - 'a'].index == 'P')&&(side == 'b')&&(move[1] == '1'))
+        {
+            printf("Player nr.2, your pawn has achieved promotion!\nenter the new figure:\n");
+            PromotionIndex = getchar();
+            while((PromotionIndex != 'R')&&(PromotionIndex != 'B')&&(PromotionIndex != 'Q')&&(PromotionIndex != 'N'))
+            {
+                printf("Warning, you entered an invalid index!\n");
+                scanf("%c", &PromotionIndex);
+            }
+        }
+        if(PromotionIndex != '-')
+        {
+            board[move[1] - '1'][move[0] - 'a'].index = PromotionIndex;
         }
         if(side == 'w')
             side = 'b';

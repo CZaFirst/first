@@ -9,9 +9,18 @@ typedef struct Cell cell;
 bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, bool castle[2][2], char PositionHistory[2][2], char side, bool* EnPasant, bool* Rook);
 bool IsCheck(cell board[8][8], char side);
 void Display(cell board[8][8]);
+bool IsCaptive(cell board[8][8], cell TestBoard[8][8], char side, bool EnPasant);
+void CopyBoard(cell board[8][8], cell TestBoard[8][8]);
+/*
+remaining tasks:
+    checkmate
+    stalemate
+
+*/
 int main(void){
     printf("Hello players!\n");
     cell board[8][8];
+    cell TestBoard[8][8];
     bool castle[2][2] = {{true, true}, {true, true}};
     char select[4] = {'-', '-', '-', '-'}, move[4] = {'-', '-', '-', '-'};
     char side = 'w';
@@ -34,6 +43,16 @@ int main(void){
     board[0][4].index = board[7][4].index = 'K';
     Display(board);
     while(true){
+        if(IsCaptive(board, TestBoard, side, EnPasant))
+        {
+            if(IsCheck(board, side))
+                printf("Checkmate!\n");
+            else
+                printf("Stalemate!\n");
+            return 1;
+        }
+        if(IsCheck(board, side))
+            printf("Attention, king in check!\n");
         EnPasant = false;
         Rook = false;
         PromotionIndex = '-';
@@ -258,6 +277,15 @@ void Display(cell board[8][8]){
         puts("");
     }
 };
+void CopyBoard(cell board[8][8], cell TestBoard[8][8])
+{
+    for(int i = 0; i < 8; i++)
+        for(int j = 0; j < 8; j++)
+        {
+            TestBoard[i][j].index = board[i][j].index;
+            TestBoard[i][j].team = board[i][j].team;
+        }
+};
 bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, bool castle[2][2], char PositionHistory[2][2], char side, bool* EnPasant, bool* Rook){
     if(board[SelectY][SelectX].index == 'P'){
         if((SelectY == MoveY - 1)&&(board[MoveY][MoveX].index == '-')&&(SelectX == MoveX)&&(side == 'w')) // checks white pawn's default move
@@ -287,13 +315,13 @@ bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, 
     if(board[SelectY][SelectX].index == 'R'){
         if(SelectX == MoveX){
             if(SelectY > MoveY){
-                for(int i = MoveY; i < SelectY; ++i)
+                for(int i = MoveY + 1; i < SelectY; i++)
                     if(board[i][MoveX].index != '-')
                         return false;
                 return true;
             }
             if(SelectY < MoveY){
-                for(int i = MoveY; i > SelectY; --i)
+                for(int i = MoveY - 1; i > SelectY; i--)
                     if(board[i][MoveX].index != '-')
                         return false;
                 return true;
@@ -301,13 +329,13 @@ bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, 
         }
         if(SelectY == MoveY){
             if(SelectX > MoveX){
-                for(int i = MoveX; i < SelectX; ++i)
+                for(int i = MoveX + 1; i < SelectX; i++)
                     if(board[MoveY][i].index != '-')
                         return false;
                 return true;
             }
             if(SelectX < MoveX){
-                for(int i = MoveX; i > SelectX; --i)
+                for(int i = MoveX - 1; i > SelectX; i--)
                     if(board[MoveY][i].index != '-')
                         return false;
                 return true;
@@ -360,13 +388,13 @@ bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, 
 
         if(SelectX == MoveX){
             if(SelectY > MoveY){
-                for(int i = MoveY; i < SelectY; ++i)
+                for(int i = MoveY + 1; i < SelectY; i++)
                     if(board[i][MoveX].index != '-')
                         return false;
                 return true;
             }
             if(SelectY < MoveY){
-                for(int i = MoveY; i > SelectY; --i)
+                for(int i = MoveY - 1; i > SelectY; i--)
                     if(board[i][MoveX].index != '-')
                         return false;
                 return true;
@@ -374,13 +402,13 @@ bool SeekMove(cell board[8][8], int SelectX, int SelectY, int MoveX, int MoveY, 
         }
         if(SelectY == MoveY){
             if(SelectX > MoveX){
-                for(int i = MoveX; i < SelectX; ++i)
+                for(int i = MoveX + 1; i < SelectX; i++)
                     if(board[MoveY][i].index != '-')
                         return false;
                 return true;
             }
             if(SelectX < MoveX){
-                for(int i = MoveX; i > SelectX; --i)
+                for(int i = MoveX - 1; i > SelectX; i--)
                     if(board[MoveY][i].index != '-')
                         return false;
                 return true;
@@ -577,4 +605,620 @@ bool IsCheck(cell board[8][8], char side)
     if((KingYPosition < 7)&&(KingXPosition < 6)&&(board[KingYPosition + 1][KingXPosition + 2].index == 'N')&&(board[KingYPosition + 1][KingXPosition + 2].team != side))
         return true;
     return false;
+}
+bool IsCaptive(cell board[8][8], cell TestBoard[8][8], char side, bool EnPasant) //used to know if king is in CheckMate or Stalemate
+{
+    int PiecesPosition[16];
+    int localX = 0; //X coordinate of the current piece
+    int localY = 0;
+    int Flag1, Flag2, Flag3, Flag4;
+    Flag1 = 0;
+    Flag2 = 0;
+    Flag3 = 0;
+    Flag4 = 0;
+    for(int i = 0; i < 16; i++)
+        PiecesPosition[i] = -1;
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            if(board[i][j].team == side)
+            {
+                PiecesPosition[localX] = i * 10 + j; //localX is used here as a counter, but in the following code it wont be anymore
+                localX++;
+            }
+        }
+    }
+    for(int k = 0; k < 16; k++)
+    {
+        if(PiecesPosition[k] == -1)     //initializes the pieces list
+            continue;
+        localY = PiecesPosition[k] / 10;
+        localX = PiecesPosition[k] % 10;
+        CopyBoard(board, TestBoard);
+        if(TestBoard[localY][localX].index == 'P')
+        {
+            if(side == 'w')
+            {
+                if(TestBoard[localY + 1][localX].index == '-')
+                {
+                    TestBoard[localY + 1][localX].index = 'P';
+                    TestBoard[localY + 1][localX].team = 'w';
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                    if((TestBoard[3][localX].index == '-')&&(localY == 1))
+                    {
+                        TestBoard[3][localX].index = 'P';
+                        TestBoard[3][localX].team = 'w';
+                        TestBoard[1][localX].index = '-';
+                        TestBoard[1][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((TestBoard[localY+1][localX + 1].team == 'b')&&(localX < 7))
+                {
+                    TestBoard[localY + 1][localX + 1].index = 'P';
+                    TestBoard[localY + 1][localX + 1].team = 'w';
+                    TestBoard[localY][localX].team = '-';
+                    TestBoard[localY][localX].index = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                if((TestBoard[localY + 1][localX - 1].team == 'b')&&(localX > 0))
+                {
+                    TestBoard[localY + 1][localX - 1].index = 'P';
+                    TestBoard[localY + 1][localX - 1].team = 'w';
+                    TestBoard[localY][localX].team = '-';
+                    TestBoard[localY][localX].index = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                //if((EnPasant)
+            }
+            else
+            {
+                if(TestBoard[localY - 1][localX].index == '-')
+                {
+                    TestBoard[localY - 1][localX].index = 'P';
+                    TestBoard[localY - 1][localX].team = 'w';
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                    if((TestBoard[4][localX].index == '-')&&(localY == 6))
+                    {
+                        TestBoard[4][localX].index = 'P';
+                        TestBoard[4][localX].team = 'b';
+                        TestBoard[6][localX].index = '-';
+                        TestBoard[6][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((TestBoard[localY-1][localX + 1].team == 'w')&&(localX < 7))
+                {
+                    TestBoard[localY - 1][localX + 1].index = 'P';
+                    TestBoard[localY - 1][localX + 1].team = 'b';
+                    TestBoard[localY][localX].team = '-';
+                    TestBoard[localY][localX].index = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                if((TestBoard[localY - 1][localX - 1].team == 'w')&&(localX > 0))
+                {
+                    TestBoard[localY - 1][localX - 1].index = 'P';
+                    TestBoard[localY - 1][localX - 1].team = 'b';
+                    TestBoard[localY][localX].team = '-';
+                    TestBoard[localY][localX].index = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+            }
+        }
+        if(TestBoard[localY][localX].index == 'R')
+        {
+            for(int i = localY + 1; i < 8; i++)
+            {
+                if(board[i][localX].team == side)
+                    break;
+                TestBoard[i][localX].index = 'R';
+                TestBoard[i][localX].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+            for(int i = localY - 1; i >= 0; i--)
+            {
+                if(board[i][localX].team == side)
+                    break;
+                TestBoard[i][localX].index = 'R';
+                TestBoard[i][localX].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+            for(int i = localX + 1; i < 8; i++)
+            {
+                if(board[localY][i].team == side)
+                    break;
+                TestBoard[localY][i].index = 'R';
+                TestBoard[localY][i].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+            for(int i = localX - 1; i >= 0; i--)
+            {
+                if(board[localY][i].team == side)
+                    break;
+                TestBoard[localY][i].index = 'R';
+                TestBoard[localY][i].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+        }
+        if(TestBoard[localY][localX].index == 'N')
+        {
+            if(localY > 1)
+            {
+                if(localX > 0)
+                {
+                    if(TestBoard[localY - 2][localX - 1].team != side)
+                    {
+                        TestBoard[localY - 2][localX - 1].index = 'N';
+                        TestBoard[localY - 2][localX - 1].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if(localX < 7)
+                {
+                    if(TestBoard[localY - 2][localX + 1].team != side)
+                    {
+                        TestBoard[localY - 2][localX + 1].index = 'N';
+                        TestBoard[localY - 2][localX + 1].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+            }
+            if(localY < 6)
+            {
+                if(localX > 0)
+                {
+                    if(TestBoard[localY + 2][localX - 1].team != side)
+                    {
+                        TestBoard[localY + 2][localX - 1].index = 'N';
+                        TestBoard[localY + 2][localX - 1].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if(localX < 7)
+                {
+                    if(TestBoard[localY + 2][localX + 1].team != side)
+                    {
+                        TestBoard[localY + 2][localX + 1].index = 'N';
+                        TestBoard[localY + 2][localX + 1].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+            }
+            if(localY > 0)
+            {
+                if(localX > 1)
+                {
+                    if(TestBoard[localY - 1][localX - 2].team != side)
+                    {
+                        TestBoard[localY - 1][localX - 2].index = 'N';
+                        TestBoard[localY - 1][localX - 2].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                    }
+                }
+                if(localX < 6)
+                {
+                    if(TestBoard[localY - 1][localX + 2].team != side)
+                    {
+                        TestBoard[localY - 1][localX + 2].index = 'N';
+                        TestBoard[localY - 1][localX + 2].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+            }
+            if(localY < 7)
+            {
+                if(localX > 1)
+                {
+                    if(TestBoard[localY + 1][localX - 2].team != side)
+                    {
+                        TestBoard[localY + 1][localX - 2].index = 'N';
+                        TestBoard[localY + 1][localX - 2].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if(localX < 6)
+                {
+                    if(TestBoard[localY + 1][localX + 2].team != side)
+                    {
+                        TestBoard[localY + 1][localX + 2].index = 'N';
+                        TestBoard[localY + 1][localX + 2].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+            }
+        }
+        if(TestBoard[localY][localX].index == 'B')
+        {
+            Flag1 = 0;
+            Flag2 = 0;
+            Flag3 = 0;
+            Flag4 = 0;
+            for(int i = 1; i < 8; i++)
+            {
+                if((Flag1 == 0)&&(localY + i < 8)&&(localX + i < 8))
+                {
+                    if(TestBoard[localY + i][localX + i].team == side)
+                    {
+                        Flag1 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY + i][localX + i].index != '-')
+                            Flag1 = 1;
+                        TestBoard[localY + i][localX + i].index = 'B';
+                        TestBoard[localY + i][localX + i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((Flag2 == 0)&&(localY + i < 8)&&(localX - i >= 0))
+                {
+                    if(TestBoard[localY + i][localX - i].team == side)
+                    {
+                        Flag2 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY + i][localX - i].index != '-')
+                            Flag2 = 1;
+                        TestBoard[localY + i][localX - i].index = 'B';
+                        TestBoard[localY + i][localX - i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((Flag3 == 0)&&(localY - i >= 0)&&(localX + i < 8))
+                {
+                    if(TestBoard[localY - i][localX + i].team == side)
+                    {
+                        Flag3 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY - i][localX + i].index != '-')
+                            Flag3 = 1;
+                        TestBoard[localY - i][localX + i].index = 'B';
+                        TestBoard[localY - i][localX + i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((Flag4 == 0)&&(localY - i >= 0)&&(localX - i >= 0))
+                {
+                    if(TestBoard[localY - i][localX - i].team == side)
+                    {
+                        Flag4 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY - i][localX - i].index != '-')
+                            Flag4 = 1;
+                        TestBoard[localY - i][localX - i].index = 'B';
+                        TestBoard[localY - i][localX - i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+            }
+        }
+        if(TestBoard[localY][localX].index == 'Q')
+        {
+            Flag1 = 0;
+            Flag2 = 0;
+            Flag3 = 0;
+            Flag4 = 0;
+            for(int i = 1; i < 8; i++)
+            {
+                if((Flag1 == 0)&&(localY + i < 8)&&(localX + i < 8))
+                {
+                    if(TestBoard[localY + i][localX + i].team == side)
+                    {
+                        Flag1 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY + i][localX + i].index != '-')
+                            Flag1 = 1;
+                        TestBoard[localY + i][localX + i].index = 'B';
+                        TestBoard[localY + i][localX + i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((Flag2 == 0)&&(localY + i < 8)&&(localX - i >= 0))
+                {
+                    if(TestBoard[localY + i][localX - i].team == side)
+                    {
+                        Flag2 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY + i][localX - i].index != '-')
+                            Flag2 = 1;
+                        TestBoard[localY + i][localX - i].index = 'B';
+                        TestBoard[localY + i][localX - i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((Flag3 == 0)&&(localY - i >= 0)&&(localX + i < 8))
+                {
+                    if(TestBoard[localY - i][localX + i].team == side)
+                    {
+                        Flag3 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY - i][localX + i].index != '-')
+                            Flag3 = 1;
+                        TestBoard[localY - i][localX + i].index = 'B';
+                        TestBoard[localY - i][localX + i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+                if((Flag4 == 0)&&(localY - i >= 0)&&(localX - i >= 0))
+                {
+                    if(TestBoard[localY - i][localX - i].team == side)
+                    {
+                        Flag4 = 1;
+                    }
+                    else
+                    {
+                        if(TestBoard[localY - i][localX - i].index != '-')
+                            Flag4 = 1;
+                        TestBoard[localY - i][localX - i].index = 'B';
+                        TestBoard[localY - i][localX - i].team = side;
+                        TestBoard[localY][localX].index = '-';
+                        TestBoard[localY][localX].team = '-';
+                        if(!IsCheck(TestBoard, side))
+                            return false;
+                        CopyBoard(board, TestBoard);
+                    }
+                }
+            }
+            for(int i = localY + 1; i < 8; i++)
+            {
+                if(board[i][localX].team == side)
+                    break;
+                TestBoard[i][localX].index = 'R';
+                TestBoard[i][localX].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+            for(int i = localY - 1; i >= 0; i--)
+            {
+                if(board[i][localX].team == side)
+                    break;
+                TestBoard[i][localX].index = 'R';
+                TestBoard[i][localX].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+            for(int i = localX + 1; i < 8; i++)
+            {
+                if(board[localY][i].team == side)
+                    break;
+                TestBoard[localY][i].index = 'R';
+                TestBoard[localY][i].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+            for(int i = localX - 1; i >= 0; i--)
+            {
+                if(board[localY][i].team == side)
+                    break;
+                TestBoard[localY][i].index = 'R';
+                TestBoard[localY][i].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+                if(board[i][localX].team != '-')
+                    break;
+            }
+        }
+        if(TestBoard[localY][localX].index == 'K')
+        {
+            if(localY < 7)
+            {
+
+                if((localX < 7)&&(TestBoard[localY + 1][localX + 1].team != side))
+                {
+                    TestBoard[localY + 1][localX + 1].index = 'K';
+                    TestBoard[localY + 1][localX + 1].team = side;
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                if((localX > 0)&&(TestBoard[localY + 1][localX - 1].team != side))
+                {
+                    TestBoard[localY + 1][localX - 1].index = 'K';
+                    TestBoard[localY + 1][localX - 1].team = side;
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                if(TestBoard[localY + 1][localX].team != side)
+                {
+                    TestBoard[localY + 1][localX].index = 'K';
+                    TestBoard[localY + 1][localX].team = side;
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+            }
+            if(localY > 0)
+            {
+                if((localX < 7)&&(TestBoard[localY - 1][localX + 1].team != side))
+                {
+                    TestBoard[localY - 1][localX + 1].index = 'K';
+                    TestBoard[localY - 1][localX + 1].team = side;
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                if((localX > 0)&&(TestBoard[localY - 1][localX - 1].team != side))
+                {
+                    TestBoard[localY - 1][localX - 1].index = 'K';
+                    TestBoard[localY - 1][localX - 1].team = side;
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+                if(TestBoard[localY - 1][localX].team != side)
+                {
+                    TestBoard[localY - 1][localX].index = 'K';
+                    TestBoard[localY - 1][localX].team = side;
+                    TestBoard[localY][localX].index = '-';
+                    TestBoard[localY][localX].team = '-';
+                    if(!IsCheck(TestBoard, side))
+                        return false;
+                    CopyBoard(board, TestBoard);
+                }
+            }
+            if((localX > 0)&&(TestBoard[localY][localX - 1].team != side))
+            {
+                TestBoard[localY][localX - 1].index = 'K';
+                TestBoard[localY][localX - 1].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+            }
+            if((localX < 7)&&(TestBoard[localY][localX + 1].team != side))
+            {
+                TestBoard[localY][localX + 1].index = 'K';
+                TestBoard[localY][localX + 1].team = side;
+                TestBoard[localY][localX].index = '-';
+                TestBoard[localY][localX].team = '-';
+                if(!IsCheck(TestBoard, side))
+                    return false;
+                CopyBoard(board, TestBoard);
+            }
+        }
+    }
+    return true;
 }
